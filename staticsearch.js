@@ -104,9 +104,10 @@ function staticsearch(htmlnode,
 			
 			function getIndices(pattern, str) {
 				const retval = [];
-				const strtrans = str.toLowerCase();
 				if (pattern == "") return retval;
-				for (let i = strtrans.indexOf(pattern, 0); i >= 0; i = strtrans.indexOf(pattern, i+1))
+				const pattrans = pattern.toLowerCase();
+				const strtrans = str.toLowerCase();
+				for (let i = strtrans.indexOf(pattrans, 0); i >= 0; i = strtrans.indexOf(pattrans, i+1))
 					retval.push(i);
 				return retval;
 			}
