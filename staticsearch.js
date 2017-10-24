@@ -123,7 +123,7 @@ function staticsearch(htmlnode,
 					const markelement = document.createElement("mark");
 					markelement.appendChild(document.createTextNode(text.slice(ind, ind + pattern.length)));
 					retval.appendChild(markelement);
-					preind += ind + pattern.length;
+					preind = ind + pattern.length;
 				}
 				retval.appendChild(document.createTextNode(text.slice(preind, text.length)));
 				
