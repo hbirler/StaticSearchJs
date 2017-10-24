@@ -217,6 +217,9 @@ function staticsearch(htmlnode,
 				if (vnode.preactive === true && vnode.active === false)
 					dactions.push(new DisplayAction(vnode, vnode.active));
 				
+				if (vnode.active === false)
+					return;
+				
 				for (const cvnode of vnode.children) {
 					computeActions(dactions, cvnode);
 				}
