@@ -6,37 +6,50 @@
     <title>StaticSearch.js Demo</title>
     <meta name="description" content="StaticSearch.js Demo">
     <meta name="author" content="Altan Birler">
+    
+    <style>
+        main, div {
+            border-style: solid;
+        }
+    </style>
 </head>
 
 <body>
     <h1>Hello</h1>
-    <input id="searchbox" type="text"/>
+    <input id="searchbox" type="text"/><br/><br/>
     <main id="main">
-    	<h2>Semesters</h2>
+        <h2>Semesters</h2>
+        <h4 data-ss-nofilter>No filter demo</h4>
+        
+        <div data-ss-additional="Semester">
+            <h4 data-ss-nofilter>Additional demo</h4>
+        </div>
+        
         <div>
-            <h4>1. Semester</h4>
-            <li>Einführung in die Informatik 1 — <a href="http://info1.tum.sexy/">info1.tum.sexy</a></li>
-            <li>Einführung in die Rechnerarchitektur — <a href="http://era.tum.sexy/">era.tum.sexy</a></li>
-            <li>Diskrete Strukturen — <a href="http://ds.tum.sexy/">ds.tum.sexy</a></li>
-            <li>Carlos Camino — <a href="http://carlos.tum.sexy/">carlos.tum.sexy</a></li>
+            <div data-ss-forceadditional="1. Semester">
+                <h4>1. Semester</h4>
+                <li>Einführung in die Informatik 1 — <a href="http://info1.tum.sexy/">info1.tum.sexy</a></li>
+                <li>Einführung in die Rechnerarchitektur — <a href="http://era.tum.sexy/">era.tum.sexy</a></li>
+                <li>Diskrete Strukturen — <a href="http://ds.tum.sexy/">ds.tum.sexy</a></li>
+                <li>Carlos Camino — <a href="http://carlos.tum.sexy/">carlos.tum.sexy</a></li>
+            </div>
+            <div data-ss-forceadditional="2. Semester">
+                <h4>2. Semester</h4>
+                <li>Einführung in die Softwaretechnik — <a href="http://eist.tum.sexy/">eist.tum.sexy</a></li>
+                <li>Grundlegende Algorithmen und Datenstrukturen — <a href="http://gad.tum.sexy/">gad.tum.sexy</a></li>
+                <li>Praktikum - Einführung in die Rechnerarchitektur — <a href="http://erapraktikum.tum.sexy/">erapraktikum.tum.sexy</a></li>
+                <li>Game Engine Design — <a href="http://ged.tum.sexy/">ged.tum.sexy</a></li>
+            </div>
         </div>
         <div>
-            <h4>2. Semester</h4>
-            <li>Einführung in die Softwaretechnik — <a href="http://eist.tum.sexy/">eist.tum.sexy</a></li>
-            <li>Grundlegende Algorithmen und Datenstrukturen — <a href="http://gad.tum.sexy/">gad.tum.sexy</a></li>
-            <li>Praktikum - Einführung in die Rechnerarchitektur — <a href="http://erapraktikum.tum.sexy/">erapraktikum.tum.sexy</a></li>
-            <li>Game Engine Design — <a href="http://ged.tum.sexy/">ged.tum.sexy</a></li>
-        </div>
-        </div>
-        <div>
-            <div>
+            <div data-ss-forceadditional="3. Semester">
                 <h4>3. Semester</h4>
                 <li>Analysis für Informatiker — <a href="http://anal.tum.sexy/">anal.tum.sexy</a></li>
                 <li>Einführung in die Informatik 2 — <a href="http://info2.tum.sexy/">info2.tum.sexy</a></li>
                 <li>Grundlagen: Datenbanken — <a href="http://db.tum.sexy/">db.tum.sexy</a></li>
                 <li>Grundlagen Betriebssystem und Systemsoftware — <a href="http://gbs.tum.sexy/">gbs.tum.sexy</a></li>
             </div>
-            <div>
+            <div data-ss-forceadditional="4. Semester">
                 <h4>4. Semester</h4>
                 <li>Grundlagen Rechnernetze und Verteilte Systeme — <a href="http://grnvs.tum.sexy/">grnvs.tum.sexy</a></li>
                 <li>Einführung in die theoretische Informatik — <a href="http://theo.tum.sexy/">theo.tum.sexy</a></li>
@@ -44,11 +57,11 @@
             </div>
         </div>
         <div>
-            <div>
+            <div data-ss-forceadditional="5. Semester">
                 <h4>5. Semester</h4>
                 <li>Numerisches Programmieren — <a href="http://numprog.tum.sexy/">numprog.tum.sexy</a></li>
             </div>
-            <div>
+            <div data-ss-forceadditional="6. Semester">
                 <h4>6. Semester</h4>
             </div>
         </div>
@@ -90,11 +103,11 @@
     </main>
     <script src="staticsearch.js"></script>
     <script type="text/javascript">
-    	let mysearch = staticsearch(document.getElementById("main"));
-    	document.getElementById("searchbox").addEventListener('input', function (evt) {
-		    let pattern = this.value;
-		    mysearch.filter(pattern);
-		});
+        let mysearch = staticsearch(document.getElementById("main"));
+        document.getElementById("searchbox").addEventListener('input', function (evt) {
+            let pattern = this.value;
+            mysearch.filter(pattern);
+        });
     </script>
 </body>
 

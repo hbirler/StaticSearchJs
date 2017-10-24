@@ -31,13 +31,21 @@ function staticsearch(htmlnode,
 		"ruby","s","samp","small","strong","sub","time",
 		"u","var","wbr","label"]) {
 	class VNode {
-		constructor(htmlnode) {
+		constructor(htmlnode, nofilter = false) {
 			this.origdisplay = htmlnode.style.display;
 			this.preactive = true;
 			this.active = true;
 			this.htmlnode = htmlnode;
 			this.children = [];
 			this.textchildren = [];
+			
+			if (nofilter) {
+				this.nofilter = true;
+			} else {
+				this.nofilter = htmlnode.hasAttribute("data-ss-nofilter");
+			}
+			this.additional = [];
+			this.forceadditional = [];
 		}
 		
 		addChild(htmlnode) {
@@ -48,13 +56,14 @@ function staticsearch(htmlnode,
 	}
 	
 	class TextVNode {
-		constructor(htmlnode, parenthtmlnode) {
+		constructor(htmlnode, parenthtmlnode, nofilter = false) {
 			this.preactive = true;
 			this.active = true;
-			this.markered = false;
 			this.htmlnode = htmlnode;
 			this.parenthtmlnode = parenthtmlnode;
 			this.data = htmlnode.nodeValue;
+			
+			this.nofilter = nofilter;
 		}
 	}
 	
@@ -65,19 +74,27 @@ function staticsearch(htmlnode,
 	}
 	
 	//Creates the initial VNode tree by traversing DOM
-	function createTraverse(vnode, htmlnode) {
+	function createTraverse(vnode, htmlnode, nofilter = false) {
+		nofilter = nofilter || vnode.nofilter;
+		
+		if (htmlnode.hasAttribute("data-ss-additional"))
+			vnode.additional.push(htmlnode.getAttribute("data-ss-additional"));
+		if (htmlnode.hasAttribute("data-ss-forceadditional"))
+			vnode.forceadditional.push(htmlnode.getAttribute("data-ss-forceadditional"));
+		
 		for (const cnode of htmlnode.childNodes) {
 			if (isTextNode(cnode)) {
 				if (cnode.nodeName === "#text") {
-					vnode.textchildren.push(new TextVNode(cnode, htmlnode));
+					vnode.textchildren.push(new TextVNode(cnode, htmlnode, nofilter));
 				}
 				else {
-					createTraverse(vnode, cnode);
+					const nocfilter = nofilter || cnode.hasAttribute("data-ss-nofilter");
+					createTraverse(vnode, cnode, nocfilter);
 				}
 			}
 			else {
 				const childvnode = vnode.addChild(cnode);
-				createTraverse(childvnode, cnode);
+				createTraverse(childvnode, cnode, nofilter);
 			}
 		}
 	}
@@ -102,12 +119,30 @@ function staticsearch(htmlnode,
 				}
 			}
 			
+			function transformPattern(pattern) {
+				return pattern.toLowerCase();
+			}
+			
+			function transformStr(str) {
+				return str.toLowerCase().trim();
+			}
+			
+			function arrayIncludes(arr, pattern) {
+				pattern = transformPattern(pattern);
+				for (let str of arr) {
+					str = transformStr(str);
+					if (str.includes(pattern))
+						return true;
+				}
+				return false;
+			}
+			
 			function getIndices(pattern, str) {
 				const retval = [];
 				if (pattern == "") return retval;
-				const pattrans = pattern.toLowerCase();
-				const strtrans = str.toLowerCase();
-				for (let i = strtrans.indexOf(pattrans, 0); i >= 0; i = strtrans.indexOf(pattrans, i+1))
+				pattern = transformPattern(pattern);
+				str = transformStr(str);
+				for (let i = str.indexOf(pattern, 0); i >= 0; i = str.indexOf(pattern, i+1))
 					retval.push(i);
 				return retval;
 			}
@@ -132,13 +167,28 @@ function staticsearch(htmlnode,
 				return retval;
 			}
 			
+			
+			
 			const markeractions = []
 			//Checks for changes in #text elements and creates MarkerActions
 			//Updates whether nodes should be displayed
-			function computeActive(pattern, mactions, vnode) {
+			function computeActive(pattern, mactions, vnode, forcedisplay = false) {
 				vnode.preactive = vnode.active;
-				vnode.active = false;
+				vnode.active = forcedisplay;
+				
+				const forceadditionalcont = arrayIncludes(vnode.forceadditional, pattern);
+				const additionalcont = forceadditionalcont || arrayIncludes(vnode.additional, pattern);
+				
+				if (additionalcont)
+					vnode.active = true;
+				
+				if (forceadditionalcont)
+					forcedisplay = true;
+				
 				for (const tvnode of vnode.textchildren) {
+					if (tvnode.nofilter)
+						continue;
+					
 					tvnode.preactive = tvnode.active;
 					indices = getIndices(pattern, tvnode.data);
 					tvnode.active = pattern === "" || indices.length > 0;
@@ -153,7 +203,7 @@ function staticsearch(htmlnode,
 				}
 				
 				for (const cvnode of vnode.children) {
-					computeActive(pattern, mactions, cvnode);
+					computeActive(pattern, mactions, cvnode, forcedisplay);
 					if (cvnode.active) vnode.active = true;
 				}
 			}
