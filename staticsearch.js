@@ -30,6 +30,15 @@ function staticsearch(htmlnode,
 		"mark","meter","pre","progress","q","rp","rt",
 		"ruby","s","samp","small","strong","sub","time",
 		"u","var","wbr","label"]) {
+	
+	function transformPattern(pattern) {
+		return pattern.toLowerCase();
+	}
+	
+	function transformStr(str) {
+		return str.trim().toLowerCase();
+	}
+	
 	class VNode {
 		constructor(htmlnode, nofilter = false) {
 			this.origdisplay = htmlnode.style.display;
@@ -61,7 +70,8 @@ function staticsearch(htmlnode,
 			this.active = true;
 			this.htmlnode = htmlnode;
 			this.parenthtmlnode = parenthtmlnode;
-			this.data = htmlnode.nodeValue;
+			this.origdata = htmlnode.nodeValue;
+			this.data = transformStr(htmlnode.nodeValue);
 			
 			this.nofilter = nofilter;
 		}
@@ -78,9 +88,9 @@ function staticsearch(htmlnode,
 		nofilter = nofilter || vnode.nofilter;
 		
 		if (htmlnode.hasAttribute("data-ss-additional"))
-			vnode.additional.push(htmlnode.getAttribute("data-ss-additional"));
+			vnode.additional.push(transformStr(htmlnode.getAttribute("data-ss-additional")));
 		if (htmlnode.hasAttribute("data-ss-forceadditional"))
-			vnode.forceadditional.push(htmlnode.getAttribute("data-ss-forceadditional"));
+			vnode.forceadditional.push(transformStr(htmlnode.getAttribute("data-ss-forceadditional")));
 		
 		for (const cnode of htmlnode.childNodes) {
 			if (isTextNode(cnode)) {
@@ -104,6 +114,8 @@ function staticsearch(htmlnode,
 	return {
 		root: treeroot,
 		filter: function(pattern) {
+			pattern = transformPattern(pattern);
+			
 			class MarkerAction {
 				constructor(parent, prenode, newnode) {
 					this.parent = parent;
@@ -119,18 +131,8 @@ function staticsearch(htmlnode,
 				}
 			}
 			
-			function transformPattern(pattern) {
-				return pattern.toLowerCase();
-			}
-			
-			function transformStr(str) {
-				return str.toLowerCase().trim();
-			}
-			
 			function arrayIncludes(arr, pattern) {
-				pattern = transformPattern(pattern);
 				for (let str of arr) {
-					str = transformStr(str);
 					if (str.includes(pattern))
 						return true;
 				}
@@ -140,8 +142,6 @@ function staticsearch(htmlnode,
 			function getIndices(pattern, str) {
 				const retval = [];
 				if (pattern == "") return retval;
-				pattern = transformPattern(pattern);
-				str = transformStr(str);
 				for (let i = str.indexOf(pattern, 0); i >= 0; i = str.indexOf(pattern, i+1))
 					retval.push(i);
 				return retval;
@@ -194,7 +194,7 @@ function staticsearch(htmlnode,
 					tvnode.active = pattern === "" || indices.length > 0;
 					
 					if (tvnode.preactive === true || (tvnode.active === true && pattern !== "")) {
-						const newnode = createMarkedElement(tvnode.data, pattern, indices);
+						const newnode = createMarkedElement(tvnode.origdata, pattern, indices);
 						const myaction = new MarkerAction(tvnode.parenthtmlnode, tvnode.htmlnode, newnode);
 						tvnode.htmlnode = newnode;
 						mactions.push(myaction);
