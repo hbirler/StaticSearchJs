@@ -64,6 +64,7 @@ function staticsearch(htmlnode,
 		return textelements.includes(htmlnode.nodeName.toLowerCase());
 	}
 	
+	//Creates the initial VNode tree by traversing DOM
 	function createTraverse(vnode, htmlnode) {
 		for (const cnode of htmlnode.childNodes) {
 			if (isTextNode(cnode)) {
@@ -81,7 +82,6 @@ function staticsearch(htmlnode,
 		}
 	}
 	
-	//build vnode tree
 	createTraverse(treeroot, htmlnode);
 	
 	return {
@@ -111,6 +111,7 @@ function staticsearch(htmlnode,
 				return retval;
 			}
 			
+			//Creates a #text replacement element that replaces pattern with mark tags
 			function createMarkedElement(text, pattern, indices) {
 				if (pattern == "" || indices.length === 0)
 					return document.createTextNode(text);
@@ -131,6 +132,8 @@ function staticsearch(htmlnode,
 			}
 			
 			const markeractions = []
+			//Checks for changes in #text elements and creates MarkerActions
+			//Updates whether nodes should be displayed
 			function computeActive(pattern, mactions, vnode) {
 				vnode.preactive = vnode.active;
 				vnode.active = false;
@@ -156,6 +159,9 @@ function staticsearch(htmlnode,
 			computeActive(pattern, markeractions, this.root);
 			
 			const displayactions = [];
+			//Computes the DisplayActions
+			//Hide nodes higher in the tree with highest priority
+			//Display nodes lower in the tree with high priority
 			function computeActions(dactions, vnode) {
 				if (vnode.preactive === true && vnode.active === false)
 					dactions.push(new DisplayAction(vnode, vnode.active));
@@ -169,6 +175,7 @@ function staticsearch(htmlnode,
 			}
 			computeActions(displayactions, this.root);
 			
+			//Apply the DisplayActions (hide and display nodes)
 			for (const dact of displayactions) {
 				if (dact.newdisplay) {
 					dact.vnode.htmlnode.style.display = dact.vnode.origdisplay;
@@ -177,16 +184,10 @@ function staticsearch(htmlnode,
 				}
 			}
 			
+			//Apply the MarkerActions (add and remove mark tags)
 			for (const mact of markeractions) {
 				mact.parent.replaceChild(mact.newnode, mact.prenode);
 			}
 		}
 	};
 }
-
-/*
-var replacementNode = document.createElement('span');
-replacementNode.innerHTML = linkify(n.textContent);
-n.parentNode.insertBefore(replacementNode, n);
-n.parentNode.replaceChild(n);
-*/
