@@ -21,15 +21,18 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+"use strict";
 
-function staticsearch(htmlnode, 
-	textelements=["a","span","link","nav","caption",
-		"#text","h1","h2","h3","h4","h5","h6",
-		"abbr","address","b","bdi","bdo","blockquote",
-		"cite","code","del","dfn","em","i","ins","kbd",
-		"mark","meter","pre","progress","q","rp","rt",
-		"ruby","s","samp","small","strong","sub","time",
-		"u","var","wbr","label"]) {
+function staticsearch(htmlnode, {
+		textelements=["a","span","link","nav","caption",
+			"#text","h1","h2","h3","h4","h5","h6",
+			"abbr","address","b","bdi","bdo","blockquote",
+			"cite","code","del","dfn","em","i","ins","kbd",
+			"mark","meter","pre","progress","q","rp","rt",
+			"ruby","s","samp","small","strong","sub","time",
+			"u","var","wbr","label"],
+		tomark = true
+	} = {}) {
 	
 	function transformPattern(pattern) {
 		return pattern.toLowerCase();
@@ -75,7 +78,11 @@ function staticsearch(htmlnode,
 			this.htmlnode = htmlnode;
 			this.parenthtmlnode = parenthtmlnode;
 			this.origdata = htmlnode.nodeValue;
+			this.orignode = htmlnode;
+			this.marked = false;
+			this.highnode = document.createElement("span");
 			this.data = transformStr(htmlnode.nodeValue);
+			this.indices = [];
 			
 			this.nofilter = nofilter;
 		}
@@ -96,7 +103,9 @@ function staticsearch(htmlnode,
 		if (htmlnode.hasAttribute("data-ss-forceadditional"))
 			vnode.forceadditional.push(transformStr(htmlnode.getAttribute("data-ss-forceadditional")));
 		
-		for (const cnode of htmlnode.childNodes) {
+		//for (const cnode of htmlnode.childNodes) {
+		for (let i = 0; i < htmlnode.childNodes.length; i++) {
+			const cnode = htmlnode.childNodes[i];
 			if (isTextNode(cnode)) {
 				if (cnode.nodeName === "#text") {
 					if (transformStr(cnode.nodeValue) !== "")
@@ -122,10 +131,8 @@ function staticsearch(htmlnode,
 			pattern = transformPattern(pattern);
 			
 			class MarkerAction {
-				constructor(parent, prenode, newnode) {
-					this.parent = parent;
-					this.prenode = prenode;
-					this.newnode = newnode;
+				constructor(markedel) {
+					this.markedel = markedel;
 				}
 			}
 			
@@ -133,6 +140,29 @@ function staticsearch(htmlnode,
 				constructor(vnode, newdisplay) {
 					this.vnode = vnode;
 					this.newdisplay = newdisplay;
+				}
+			}
+			
+			class MarkedElement {
+				constructor(tvnode, ishtml, data) {
+					this.ishtml = ishtml;
+					this.data = data;
+					this.tvnode = tvnode;
+				}
+				setHTML() {
+					if (this.ishtml) {
+						this.tvnode.highnode.innerHTML = this.data;
+					}
+					
+					if (this.ishtml !== this.tvnode.marked)
+					{
+						const prenode = this.tvnode.htmlnode;
+						const parent = prenode.parentElement;
+						const nextnode = this.ishtml ? this.tvnode.highnode : this.tvnode.orignode;
+						parent.replaceChild(nextnode, this.tvnode.htmlnode);
+						this.tvnode.htmlnode = nextnode;
+						this.tvnode.marked = this.ishtml;
+					}
 				}
 			}
 			
@@ -153,23 +183,21 @@ function staticsearch(htmlnode,
 			}
 			
 			//Creates a #text replacement element that replaces pattern with mark tags
-			function createMarkedElement(text, pattern, indices) {
+			function createMarkedElement(tvnode, text, pattern, indices) {
 				if (pattern == "" || indices.length === 0)
-					return document.createTextNode(text);
+					return new MarkedElement(tvnode, false, text);
 				
-				const retval = document.createElement("span");
+				let retvalhtml = "";
 				
 				let preind = 0;
 				for (const ind of indices) {
-					retval.appendChild(document.createTextNode(text.slice(preind, ind)));
-					const markelement = document.createElement("mark");
-					markelement.appendChild(document.createTextNode(text.slice(ind, ind + pattern.length)));
-					retval.appendChild(markelement);
+					retvalhtml += text.slice(preind, ind);
+					retvalhtml += "<mark>" + text.slice(ind, ind + pattern.length) + "</mark>";
 					preind = ind + pattern.length;
 				}
-				retval.appendChild(document.createTextNode(text.slice(preind, text.length)));
+				retvalhtml += text.slice(preind, text.length);
 				
-				return retval;
+				return new MarkedElement(tvnode, true, retvalhtml);
 			}
 			
 			
@@ -177,7 +205,7 @@ function staticsearch(htmlnode,
 			const markeractions = []
 			//Checks for changes in #text elements and creates MarkerActions
 			//Updates whether nodes should be displayed
-			function computeActive(pattern, mactions, vnode, forcedisplay = false) {
+			function computeActive(pattern, vnode, forcedisplay = false) {
 				vnode.preactive = vnode.active;
 				vnode.active = vnode.always;
 				
@@ -195,47 +223,52 @@ function staticsearch(htmlnode,
 						continue;
 					
 					tvnode.preactive = tvnode.active;
-					indices = getIndices(pattern, tvnode.data);
-					tvnode.active = pattern === "" || indices.length > 0;
+					tvnode.indices = getIndices(pattern, tvnode.data);
+					tvnode.active = pattern === "" || tvnode.indices.length > 0;
 					
-					if (tvnode.preactive === true || (tvnode.active === true && pattern !== "")) {
-						const newnode = createMarkedElement(tvnode.origdata, pattern, indices);
-						const myaction = new MarkerAction(tvnode.parenthtmlnode, tvnode.htmlnode, newnode);
-						tvnode.htmlnode = newnode;
-						mactions.push(myaction);
-					}
 					if (tvnode.active) vnode.active = true;
 				}
 				
 				for (const cvnode of vnode.children) {
-					computeActive(pattern, mactions, cvnode, forcedisplay || vnode.single);
+					computeActive(pattern, cvnode, forcedisplay || vnode.single);
 					if (cvnode.active) vnode.active = true;
 				}
 				
 				vnode.predisplay = vnode.display;
 				vnode.display = forcedisplay || vnode.active;
 			}
-			computeActive(pattern, markeractions, this.root);
+			computeActive(pattern, this.root);
 			
 			const displayactions = [];
 			//Computes the DisplayActions
 			//Hide nodes higher in the tree with highest priority
 			//Display nodes lower in the tree with high priority
-			function computeActions(dactions, vnode) {
+			function computeActions(mactions, dactions, vnode) {
 				if (vnode.predisplay === true && vnode.display === false)
 					dactions.push(new DisplayAction(vnode, vnode.display));
+				
+				for (const tvnode of vnode.textchildren) {
+					if (tvnode.nofilter)
+						continue;
+					if (tvnode.preactive === true || tvnode.active === true) {
+						const markel = createMarkedElement(tvnode, tvnode.origdata, pattern, tvnode.indices);
+						const myaction = new MarkerAction(markel);
+						
+						mactions.push(myaction);
+					}
+				}
 				
 				if (vnode.display === false)
 					return;
 				
 				for (const cvnode of vnode.children) {
-					computeActions(dactions, cvnode);
+					computeActions(mactions, dactions, cvnode);
 				}
 				
 				if (vnode.predisplay === false && vnode.display === true)
 					dactions.push(new DisplayAction(vnode, vnode.display));
 			}
-			computeActions(displayactions, this.root);
+			computeActions(markeractions, displayactions, this.root);
 			
 			//Apply the DisplayActions (hide and display nodes)
 			for (const dact of displayactions) {
@@ -247,8 +280,10 @@ function staticsearch(htmlnode,
 			}
 			
 			//Apply the MarkerActions (add and remove mark tags)
-			for (const mact of markeractions) {
-				mact.parent.replaceChild(mact.newnode, mact.prenode);
+			if (tomark) {
+				for (const mact of markeractions) {
+					mact.markedel.setHTML();
+				}
 			}
 		}
 	};

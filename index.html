@@ -148,7 +148,8 @@
     </main>
     <script src="staticsearch.js"></script>
     <script type="text/javascript">
-    let mysearch = staticsearch(document.getElementById("main"));
+    for(let i=0;i<4;i++)document.getElementById("main").appendChild(document.getElementById("main").cloneNode(true));
+    let mysearch = staticsearch(document.getElementById("main"), {tomark:true});
     document.getElementById("searchbox").addEventListener('input', function(evt) {
         let pattern = this.value;
         mysearch.filter(pattern);
