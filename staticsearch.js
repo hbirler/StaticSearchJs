@@ -31,16 +31,26 @@ function staticsearch(htmlnode, {
 			"mark","meter","pre","progress","q","rp","rt",
 			"ruby","s","samp","small","strong","sub","time",
 			"u","var","wbr","label"],
-		tomark = true
+		tomark = true,
+		getIndices = function(pattern, str, onlyexists) {
+			if (onlyexists)
+				return {found:str.includes(pattern)};
+			
+			const retval = [];
+			if (pattern === "") return {found:true, values:retval};
+			for (let i = str.indexOf(pattern, 0); i >= 0; i = str.indexOf(pattern, i+1))
+				retval.push({start:i, end:i+pattern.length});
+			return {found:retval.length > 0, values:retval};
+		},
+		transformPattern = function(pattern) {
+			return pattern.toLowerCase();
+		},
+		transformStr = function(str) {
+			return str.trim().toLowerCase();
+		}
 	} = {}) {
 	
-	function transformPattern(pattern) {
-		return pattern.toLowerCase();
-	}
 	
-	function transformStr(str) {
-		return str.trim().toLowerCase();
-	}
 	
 	class VNode {
 		constructor(htmlnode, nofilter = false) {
@@ -82,7 +92,7 @@ function staticsearch(htmlnode, {
 			this.marked = false;
 			this.highnode = document.createElement("span");
 			this.data = transformStr(htmlnode.nodeValue);
-			this.indices = [];
+			this.indices = {};
 			
 			this.nofilter = nofilter;
 		}
@@ -168,32 +178,24 @@ function staticsearch(htmlnode, {
 			
 			function arrayIncludes(arr, pattern) {
 				for (let str of arr) {
-					if (str.includes(pattern))
+					if (getIndices(pattern, str, true).found)
 						return true;
 				}
 				return false;
 			}
 			
-			function getIndices(pattern, str) {
-				const retval = [];
-				if (pattern == "") return retval;
-				for (let i = str.indexOf(pattern, 0); i >= 0; i = str.indexOf(pattern, i+1))
-					retval.push(i);
-				return retval;
-			}
-			
 			//Creates a #text replacement element that replaces pattern with mark tags
 			function createMarkedElement(tvnode, text, pattern, indices) {
-				if (pattern == "" || indices.length === 0)
+				if (pattern == "" || indices.values.length === 0)
 					return new MarkedElement(tvnode, false, text);
 				
 				let retvalhtml = "";
 				
 				let preind = 0;
-				for (const ind of indices) {
-					retvalhtml += text.slice(preind, ind);
-					retvalhtml += "<mark>" + text.slice(ind, ind + pattern.length) + "</mark>";
-					preind = ind + pattern.length;
+				for (const {start, end} of indices.values) {
+					retvalhtml += text.slice(preind, start);
+					retvalhtml += "<mark>" + text.slice(start, end) + "</mark>";
+					preind = end;
 				}
 				retvalhtml += text.slice(preind, text.length);
 				
@@ -223,8 +225,8 @@ function staticsearch(htmlnode, {
 						continue;
 					
 					tvnode.preactive = tvnode.active;
-					tvnode.indices = getIndices(pattern, tvnode.data);
-					tvnode.active = pattern === "" || tvnode.indices.length > 0;
+					tvnode.indices = getIndices(pattern, tvnode.data, false);
+					tvnode.active = pattern === "" || tvnode.indices.found;
 					
 					if (tvnode.active) vnode.active = true;
 				}

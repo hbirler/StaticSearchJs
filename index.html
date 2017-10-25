@@ -24,7 +24,7 @@
 
 <body>
     <h3>Hello</h3>
-    <input id="searchbox" type="text" />
+    <input id="searchbox" type="text" placeholder="Regular Expression (ex: '\d')" />
     <br/>
     <br/>
     <main id="main">
@@ -149,7 +149,33 @@
     <script src="staticsearch.js"></script>
     <script type="text/javascript">
     //for(let i=0;i<4;i++)document.getElementById("main").appendChild(document.getElementById("main").cloneNode(true));
-    let mysearch = staticsearch(document.getElementById("main"), {tomark:true});
+    function customGet(pattern, str, single = false) {
+        if (pattern == "") return {found:true, values:[]}
+        
+        const values = [];
+        
+        let match;
+        while ((match = pattern.exec(str)) !== null) {
+            values.push({start:match.index, end:pattern.lastIndex});
+            if (pattern.lastIndex == 0) {
+                values = []
+                break;
+            }
+        }
+        
+        return {found: values.length > 0, values};
+    }
+    
+    function customPatternTrans(pattern) {
+        try {
+            return pattern === "" ? "" : new RegExp(pattern, 'gi');
+        }
+        catch (exc) {
+            return "";
+        }
+    }
+    
+    let mysearch = staticsearch(document.getElementById("main"), {tomark:true, getIndices : customGet, transformPattern : customPatternTrans});
     document.getElementById("searchbox").addEventListener('input', function(evt) {
         let pattern = this.value;
         mysearch.filter(pattern);
