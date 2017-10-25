@@ -7,30 +7,69 @@
     <meta name="description" content="StaticSearch.js Demo">
     <meta name="author" content="Altan Birler">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    
     <style>
-        main, div {
-            border-style: solid;
-            border-width: 1px;
-        }
-        h2,h4 {
-            margin-top: 0px;
-            margin-bottom: 0px;
-        }
+    main,
+    div {
+        border-style: solid;
+        border-width: 1px;
+    }
+
+    h2,
+    h4 {
+        margin-top: 0px;
+        margin-bottom: 0px;
+    }
     </style>
 </head>
 
 <body>
     <h3>Hello</h3>
-    <input id="searchbox" type="text"/><br/><br/>
+    <input id="searchbox" type="text" />
+    <br/>
+    <br/>
     <main id="main">
+        <table class="tableizer-table">
+            <thead data-ss-nofilter data-ss-always>
+                <tr>
+                    <th>Semester</th>
+                    <th>Name</th>
+                    <th>Url</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr data-ss-single>
+                    <td>1</td>
+                    <td>Einführung in die Informatik 1</td>
+                    <td>http://info1.tum.sexy/</td>
+                </tr>
+                <tr data-ss-single>
+                    <td>1</td>
+                    <td>Einführung in die Rechnerarchitektur</td>
+                    <td>http://era.tum.sexy/</td>
+                </tr>
+                <tr data-ss-single>
+                    <td>2</td>
+                    <td>Einführung in die Softwaretechnik</td>
+                    <td>http://eist.tum.sexy/</td>
+                </tr>
+                <tr data-ss-single>
+                    <td>3</td>
+                    <td>Analysis für Informatiker</td>
+                    <td>http://anal.tum.sexy/</td>
+                </tr>
+                <tr data-ss-single>
+                    <td>3</td>
+                    <td>Grundlagen: Datenbanken</td>
+                    <td>http://db.tum.sexy/</td>
+                </tr>
+            </tbody>
+        </table>
+        
         <h2>Semesters</h2>
         <h4 data-ss-nofilter>No filter demo</h4>
-        
         <div data-ss-additional="Semester">
             <h4 data-ss-nofilter>Additional demo</h4>
         </div>
-        
         <div>
             <div data-ss-forceadditional="1. Semester">
                 <h4>1. Semester</h4>
@@ -109,11 +148,11 @@
     </main>
     <script src="staticsearch.js"></script>
     <script type="text/javascript">
-        let mysearch = staticsearch(document.getElementById("main"));
-        document.getElementById("searchbox").addEventListener('input', function (evt) {
-            let pattern = this.value;
-            mysearch.filter(pattern);
-        });
+    let mysearch = staticsearch(document.getElementById("main"));
+    document.getElementById("searchbox").addEventListener('input', function(evt) {
+        let pattern = this.value;
+        mysearch.filter(pattern);
+    });
     </script>
 </body>
 

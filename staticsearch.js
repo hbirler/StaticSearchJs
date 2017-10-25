@@ -23,7 +23,7 @@ SOFTWARE.
 */
 
 function staticsearch(htmlnode, 
-	textelements=["a","span","link","nav","caption","thead",
+	textelements=["a","span","link","nav","caption",
 		"#text","h1","h2","h3","h4","h5","h6",
 		"abbr","address","b","bdi","bdo","blockquote",
 		"cite","code","del","dfn","em","i","ins","kbd",
@@ -44,6 +44,10 @@ function staticsearch(htmlnode,
 			this.origdisplay = htmlnode.style.display;
 			this.preactive = true;
 			this.active = true;
+			this.predisplay = true;
+			this.display = true;
+			this.always = htmlnode.hasAttribute("data-ss-always");
+			this.single = htmlnode.hasAttribute("data-ss-single") || this.always;
 			this.htmlnode = htmlnode;
 			this.children = [];
 			this.textchildren = [];
@@ -95,7 +99,8 @@ function staticsearch(htmlnode,
 		for (const cnode of htmlnode.childNodes) {
 			if (isTextNode(cnode)) {
 				if (cnode.nodeName === "#text") {
-					vnode.textchildren.push(new TextVNode(cnode, htmlnode, nofilter));
+					if (transformStr(cnode.nodeValue) !== "")
+						vnode.textchildren.push(new TextVNode(cnode, htmlnode, nofilter));
 				}
 				else {
 					const nocfilter = nofilter || cnode.hasAttribute("data-ss-nofilter");
@@ -174,7 +179,7 @@ function staticsearch(htmlnode,
 			//Updates whether nodes should be displayed
 			function computeActive(pattern, mactions, vnode, forcedisplay = false) {
 				vnode.preactive = vnode.active;
-				vnode.active = forcedisplay;
+				vnode.active = vnode.always;
 				
 				const forceadditionalcont = arrayIncludes(vnode.forceadditional, pattern);
 				const additionalcont = forceadditionalcont || arrayIncludes(vnode.additional, pattern);
@@ -203,9 +208,12 @@ function staticsearch(htmlnode,
 				}
 				
 				for (const cvnode of vnode.children) {
-					computeActive(pattern, mactions, cvnode, forcedisplay);
+					computeActive(pattern, mactions, cvnode, forcedisplay || vnode.single);
 					if (cvnode.active) vnode.active = true;
 				}
+				
+				vnode.predisplay = vnode.display;
+				vnode.display = forcedisplay || vnode.active;
 			}
 			computeActive(pattern, markeractions, this.root);
 			
@@ -214,18 +222,18 @@ function staticsearch(htmlnode,
 			//Hide nodes higher in the tree with highest priority
 			//Display nodes lower in the tree with high priority
 			function computeActions(dactions, vnode) {
-				if (vnode.preactive === true && vnode.active === false)
-					dactions.push(new DisplayAction(vnode, vnode.active));
+				if (vnode.predisplay === true && vnode.display === false)
+					dactions.push(new DisplayAction(vnode, vnode.display));
 				
-				if (vnode.active === false)
+				if (vnode.display === false)
 					return;
 				
 				for (const cvnode of vnode.children) {
 					computeActions(dactions, cvnode);
 				}
 				
-				if (vnode.preactive === false && vnode.active === true)
-					dactions.push(new DisplayAction(vnode, vnode.active));
+				if (vnode.predisplay === false && vnode.display === true)
+					dactions.push(new DisplayAction(vnode, vnode.display));
 			}
 			computeActions(displayactions, this.root);
 			
