@@ -150,6 +150,7 @@
     <script type="text/javascript">
     //for(let i=0;i<4;i++)document.getElementById("main").appendChild(document.getElementById("main").cloneNode(true));
     function customGet(pattern, str, single = false) {
+        pattern = customPatternTrans(pattern);
         if (pattern == "") return {found:true, values:[]}
         
         const values = [];
@@ -161,6 +162,9 @@
                 values = []
                 break;
             }
+            
+            if (pattern.lastIndex >= str.length)
+                break;
         }
         
         return {found: values.length > 0, values};
@@ -175,7 +179,7 @@
         }
     }
     
-    let mysearch = staticsearch(document.getElementById("main"), {tomark:true, getIndices : customGet, transformPattern : customPatternTrans});
+    let mysearch = staticsearch(document.getElementById("main"), {tomark:true, getIndices : customGet});
     document.getElementById("searchbox").addEventListener('input', function(evt) {
         let pattern = this.value;
         mysearch.filter(pattern);
