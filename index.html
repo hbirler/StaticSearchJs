@@ -150,8 +150,16 @@
     <script type="text/javascript">
     //for(let i=0;i<4;i++)document.getElementById("main").appendChild(document.getElementById("main").cloneNode(true));
     function customGet(pattern, str, single = false) {
-        pattern = customPatternTrans(pattern);
-        if (pattern == "") return {found:true, values:[]}
+        if (pattern == "") {
+            return {found:true, values:[]};
+        }
+        
+        try {
+            pattern = new RegExp(pattern, 'gi');
+        }
+        catch (exc) {
+            return {found:true, values:[]};
+        }
         
         const values = [];
         
@@ -163,20 +171,12 @@
                 break;
             }
             
-            if (pattern.lastIndex >= str.length)
+            if (pattern.lastIndex >= str.length) {
                 break;
+            }
         }
         
         return {found: values.length > 0, values};
-    }
-    
-    function customPatternTrans(pattern) {
-        try {
-            return pattern === "" ? "" : new RegExp(pattern, 'gi');
-        }
-        catch (exc) {
-            return "";
-        }
     }
     
     let mysearch = staticsearch(document.getElementById("main"), {tomark:true, getIndices : customGet});

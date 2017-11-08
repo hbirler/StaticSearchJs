@@ -46,7 +46,7 @@ function staticsearch(htmlnode, {
 			return pattern.toLowerCase();
 		},
 		transformStr = function(str) {
-			return str.trim().toLowerCase();
+			return str.toLowerCase();
 		}
 	} = {}) {
 	
@@ -118,8 +118,9 @@ function staticsearch(htmlnode, {
 			const cnode = htmlnode.childNodes[i];
 			if (isTextNode(cnode)) {
 				if (cnode.nodeName === "#text") {
-					if (transformStr(cnode.nodeValue) !== "")
+					if (transformStr(cnode.nodeValue).trim() !== "") {
 						vnode.textchildren.push(new TextVNode(cnode, htmlnode, nofilter));
+					}
 				}
 				else {
 					const nocfilter = nofilter || cnode.hasAttribute("data-ss-nofilter");
@@ -221,11 +222,13 @@ function staticsearch(htmlnode, {
 					forcedisplay = true;
 				
 				for (const tvnode of vnode.textchildren) {
-					if (tvnode.nofilter)
+					if (tvnode.nofilter && !pattern === "")
 						continue;
 					
 					tvnode.preactive = tvnode.active;
-					tvnode.indices = getIndices(pattern, tvnode.data, false);
+					if (!tvnode.nofilter) {
+						tvnode.indices = getIndices(pattern, tvnode.data, false);
+					}
 					tvnode.active = pattern === "" || tvnode.indices.found;
 					
 					if (tvnode.active) vnode.active = true;
